@@ -7,7 +7,6 @@
 // --- tipo de pago --> efectivo, tarjeta
 // --- ganancias de un determinado dia
 
-
 // Prendas
 private class Prenda {
     private int precioBase;
@@ -67,7 +66,6 @@ public class Item {
     }
 }
 
-
 // para el tipo de pago se podria hacer:
 // - strategy (hice)
 // - template method por el metodo recargo() (la clase abstracta Venta define precioDeVenta() y usa recargo() dentro, el cual es definido por sus sublcases) !!!
@@ -87,7 +85,6 @@ public class Tarjeta inherits TipoPago {
     }
 }
 
-
 // Ganancias
 public class Ganancia {
     private List<Venta> ventas;
@@ -101,7 +98,7 @@ public class Ganancia {
 
 
 //-------------------------------------QUEMEPONGO1-------------------------------------
-// - Como usuario de QuéMePongo, quiero poder cargar prendas válidas para generar atuendos con ellas
+// --- Como usuario de QuéMePongo, quiero poder cargar prendas válidas para generar atuendos con ellas
 
 // PRENDA VALIDA
 // valida: que no le falte ningun atributo obligatorio
@@ -132,7 +129,6 @@ public class PrendaValida{
     }
 }
 
-
 // TIPOS DE PRENDA Y CATEGORIAS
 public abstract class tipoDePrenda {
     private Categoria categoria; // asegura que no haya tipo sin categoria
@@ -148,7 +144,6 @@ public enum Categoria{
     CALZADO,
     ACCESORIO
 }
-
 
 // MATERIALES Y COLORES
 public enum Material {
@@ -168,7 +163,6 @@ class Color{
     int azul;
 }
 
-
 // VALIDACIONES
 // todos los parámetros recibidos deben ser no nulos --> FAIL FAST = en el contructor se fdlla lo antes posible
     public Prenda(TipoDePrenda tipo, Material material, Color color)
@@ -183,11 +177,11 @@ class Color{
 
 
 //-------------------------------------QUEMEPONGO2-------------------------------------
-// - saber la TRAMA de la TELA de la prenda (lisa, rayada, cuadriculada, estampada)
-// - crear prenda especificando en el siguiente orden: 1) tipo 2) material
-// - guardar un borrador de la ultima prenda
-// - si no se aclara la trama, se asume lisa
-// - guardar solo las prendas validas
+// --- saber la TRAMA de la TELA de la prenda (lisa, rayada, cuadriculada, estampada)
+// --- crear prenda especificando en el siguiente orden: 1) tipo 2) material
+// --- guardar un borrador de la ultima prenda
+// --- si no se aclara la trama, se asume lisa
+// --- guardar solo las prendas validas
 
 
 // TRAMA
@@ -195,7 +189,6 @@ class Color{
 public enum Trama {
     LISA, RAYADA, CUADRICULADA, ESTAMPADA
 }
-
 
 // MATERIAL
 // sigue siendo un enum, no puede ser una clase con atributo trama porque:
@@ -208,7 +201,6 @@ public enum Material {
     ALGODON, LANA, JEAN, CUERO, SEDA
 }
 
-
 // ORDEN
 // ya se asegura con el constructor
 // aca tambien metemos que el material como default es liso (no hay otro lugar donde meterlo)
@@ -220,11 +212,11 @@ public Prenda(TipoPrenda tipoPrenda, Material material, Color colorPrincipal, Co
      this.colorSecundario = colorSecundario;
 }
 
-
 // BORRADOR
 // no podemos hacer que un borrador sea una PRENDA, ya que esta clase es INMUTABLE (se completan todos sus campos o no es valida)
 // no hicimos mal en hacer la prenda inmutable, solo debemos crear otra clase para el borrador
 // para el BORRADOR, necesitamos una clase mutable que guarde la prenda en construccion (de a pasos) --> BUILDER PATTERN
+// el BUILDER tambien sirve al tener objetos con varios parametros opcionales y aquellos que necesitan extensibilidad futura
 public class Borrador{
     // es igual a la prenda, pero sus campos NO SON OBLIGATORIOS
     private TipoPrenda tipoPrenda;
@@ -313,4 +305,179 @@ public class Usuario {
         this.borradorActual.buildPrenda();
     }
 }
+
+
+
+//-------------------------------------QUEMEPONGO3-------------------------------------
+// --- recibir sugerencias de prendas: 
+//      - debe vestir completamente
+//      - cada parte del cuerpo 1 sola prenda
+//      - deben poder combinar todas las prendas del guardarropas
+//      - deben admitir filtros al generarse: por ej, filtrar ropa informal para mayores de 55 años
+// --- indicar si una prenda es formal, informal o neutra
+// --- cambiar el motor de sugerencias
+
+// ESTILOS
+// estiloPrenda -> enum (hace q la gente no pueda escribirlo mal)
+public enum Estilo {
+    INFORMAL, 
+    FORMAL, 
+    NEUTRA
+}
+
+// CLASE SUGERENCIA
+// las sugerencias eligen de manera random una prenda para cada parte del cuerpo, el user solo la crea)
+public class Sugerencia {
+    private Prenda prendaParteSuperior;
+    private Prenda prendaParteInferior;
+    private Prenda prendaCalzado;
+
+    public Sugerencia(Prenda prendaTorso, Prenda prendaPiernas, Prenda prendaPies) {
+        // el Constructor hace que sean obligatorias
+        this.prendaTorso = requireNonNull(prendaTorso, "campo obligatorio");
+        this.prendaPiernas = requireNonNull(prendaPiernas, "campo obligatorio");
+        this.prendaPies = requireNonNull(prendaPies, "campo obligatorio");
+    }
+}
+
+// GUARDARROPAS
+// 2 opciones:
+// A) podemos tener esto (primera idea general)
+public class Guardarropa {
+    private List<Prenda> prendas;
+
+    // para obtener las prendas de cierta categoria
+    public List<Prenda> prendasDeCategoria(Categoria categoria) {
+        return prendas.filter(prenda -> prenda.categoriaDeLaPrenda().equals(categoria));
+    }
+}
+
+// B) o podemos tener algo asi --> tener separadas las prendas por categoria lo hace MAS EFICIENTE
+public class Guardarropa {
+    private List<Prenda> prendasParteSuperior;
+    private List<Prenda> prendasParteInferior;
+    private List<Prenda> prendasCalzado;
+
+    // para obtener las prendas de cierta categoria --> no tenemos que estar filtrando siempre la lista
+    public List<Prenda> prendasDeCategoria(Categoria categoria) {
+        switch(categoria) {
+            case PARTE_SUPERIOR:
+                return prendasParteSuperior;
+            case PARTE_INFERIOR:
+                return prendasParteInferior;
+            case CALZADO:
+                return prendasCalzado;
+        }
+    }
+}
+
+// MOTOR DE SUGERENCIAS
+// MotorSugerencias --> FACTORY METHOD = clase abstracta que tiene un método -> cuyas subclases implementarán
+// los users tienen un atributo MotorSugerencias (el cual pueden cambiar) -> INYECCION DE DEPENDENCIAS
+// método en la clase Usuario para generar la sugerencia
+public class Usuario {
+    // ... atributos ...
+    Guardarropa guardarropa;
+    MotorSugerencias motorSugerencias;
+
+    public Sugerencia crearSugerencia() {
+        return this.motorSugerencias.crearSugerencia(this.guardarropa);
+    }
+
+    public List<Sugerencia> crearTodasLasSugerenciasPosibles(){
+        // para esto se podria usar un motor de sugerencias distinto que genere todas las combinaciones posibles
+        // o meter un metodo en general (porque para todos los motores va a hacer lo mismo) --> producto cartesiano
+        return this.motorSugerencias.crearTodasLasSugerenciasPosibles(this.guardarropa);
+    }
+}
+
+public interface MotorSugerencias {
+    // para una interfaz --> no hace falta poner ABSTRACT
+    Sugerencia crearSugerencia(Guardarropa guardarropa);
+    // se agrega DEFAULT porque es un metodo comun a todos los motores
+    default List<Sugerencia> crearTodasLasSugerenciasPosibles(Guardarropa guardarropa) {
+        // pseudocodigo --> no se como se hace el prod cartesiano
+        return Set.cartesianProduct(
+            guardarropa.prendasParteSuperior,
+            guardarropa.prendasParteInferior,
+            guardarropa.prendasCalzado
+        )
+    }
+}
+
+// por ejemplo
+public class MotorSugerenciasBasico implements MotorSugerencias {
+    @Override
+    public Sugerencia crearSugerencia(Guardarropa guardarropa) {
+        // obtenemos uno random de cada categoria
+        Prenda prendaTorso = guardarropa.prendasDeCategoria(Categoria.PARTE_SUPERIOR).getRandom();
+        Prenda prendaPiernas = guardarropa.prendasDeCategoria(Categoria.PARTE_INFERIOR).getRandom();
+        Prenda prendaPies = guardarropa.prendasDeCategoria(Categoria.CALZADO).getRandom();
+
+        return new Sugerencia(prendaTorso, prendaPiernas, prendaPies);
+    }
+}
+
+// PD: para los filtros, simplemente se podria hacer que el usuario elija otro motor que filtre lo pedido --> lo malo: tendriamos muchos motores (motorParaMayoresDe65, etc)
+// Oooo se podría usar el metodo DECORATOR:
+
+// DECORATOR PATTERN
+// - este metodo, hace que no tengamos tantas subclases por cada combinacion posible
+// - en vez de crear subclases para cada motor (motorParaRopaInformalParaMayoresDe65), creamos un DECORADOR por cada filtro (por ej: ParaMayoresDe65, ParaClimaFrio, etc)
+// - estos decoradores son sublcases de la principal (MotorSugerencias) y tienen un atributo MotorSugerencias (el que decoran)
+// --> es decir, tenemos una subclase por cada agregado, pero no una por cada combinacion posible -> los agregados se envuelven entre si (se van "agregando" filtros)
+
+// ejemplo con una pizza (easy)
+// interfaz general --> MotorSugerencias
+public interface Pizza {
+    double costo();
+    String descripcion();
+}
+
+// objeto base --> MotorSugerenciasBasico
+public class Muzzarella implements Pizza {
+    public double costo() { return 1000; }
+    public String descripcion() { return "Pizza de Muzza"; }
+}
+
+// multiples filtros: DECORADORES --> motorParaRopaInformalParaMayoresDe65
+public class ConJamon implements Pizza {    
+    private Pizza pizzaQueEstoyEnvolviendo; // La pizza que está adentro mío --> por ejemplo Muzzarella --> DECORADO
+
+    public ConJamon(Pizza pizza) {
+        this.pizzaQueEstoyEnvolviendo = pizza;
+    }
+
+    public double costo() {
+        // Mi costo es el costo de la pizza de adentro + 300 pesos del jamón
+        return this.pizzaQueEstoyEnvolviendo.costo() + 300;
+    }
+}
+
+public class ConTomate implements Pizza {    
+    private Pizza pizzaQueEstoyEnvolviendo; // DECORADO
+
+    public ConTomate(Pizza pizza) {
+        this.pizzaQueEstoyEnvolviendo = pizza;
+    }
+
+    public double costo() {
+        // Mi costo es el costo de la pizza de adentro + 200 pesos del tomate
+        return this.pizzaQueEstoyEnvolviendo.costo() + 200;
+    }
+}
+
+// uso: se van envolviendo
+// 1. Creo una muzza simple (Costo: 1000)
+Pizza miCena = new Muzzarella(); 
+
+// 2. Le agrego jamón (Costo: 1000 + 300)
+miCena = new ConJamon(miCena); 
+
+// 3. Le agrego tomate (Costo: 1300 + 200)
+miCena = new ConTomate(miCena); 
+
+// queda algo como:
+// System.out.println(miCena.costo()); Imprime 1600
+// System.out.println(miCena.descripcion()); "Pizza de Muzza con Jamón con Jamón"
 
