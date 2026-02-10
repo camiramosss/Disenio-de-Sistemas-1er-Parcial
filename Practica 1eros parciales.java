@@ -97,7 +97,7 @@ public class Ganancia {
 
 
 
-//-------------------------------------QUEMEPONGO1-------------------------------------
+//-------------------------------------QueMePongo1-------------------------------------
 // --- Como usuario de QuéMePongo, quiero poder cargar prendas válidas para generar atuendos con ellas
 
 // PRENDA VALIDA
@@ -176,7 +176,7 @@ class Color{
 
 
 
-//-------------------------------------QUEMEPONGO2-------------------------------------
+//-------------------------------------QueMePongo2-------------------------------------
 // --- saber la TRAMA de la TELA de la prenda (lisa, rayada, cuadriculada, estampada)
 // --- crear prenda especificando en el siguiente orden: 1) tipo 2) material
 // --- guardar un borrador de la ultima prenda
@@ -308,7 +308,7 @@ public class Usuario {
 
 
 
-//-------------------------------------QUEMEPONGO3-------------------------------------
+//-------------------------------------QueMePongo3-------------------------------------
 // --- recibir sugerencias de prendas: 
 //      - debe vestir completamente
 //      - cada parte del cuerpo 1 sola prenda
@@ -483,7 +483,7 @@ miCena = new ConTomate(miCena);
 
 
 
-//-------------------------------------QMP4-------------------------------------
+//-------------------------------------QueMePongo4-------------------------------------
 // --- recibir sugerencias segun el clima con ropa segun condiciones climaticas
 // --- conocer las referencias climaticas de BUENOS AIRES en un moment dado
 // --- cada tipoPrenda tiene un rango de temperatura para la que es adecuada
@@ -564,7 +564,7 @@ public class Prenda{
     // ... atributos ...
     private BigDecimal temperaturaAdecuadaComoMaxima;
 
-    public Bool esAptaPara(BigDecimal temperaturaActual){
+    public Bool esAptaPara(BigDecimal temperaturaActual) {
         return this.temperaturaAdecuadaComoMaxima >= tempreaturaActual
     }
 }
@@ -839,3 +839,122 @@ public class Guardarropa {
     }
 }
 
+
+
+//-------------------------------------QueMePongo6-------------------------------------
+// --- tener sugerencia diaria de que ponerse, actualizada
+// --- disparar el calculo de sugerencias diarias para todos los users (a principio de dia)
+//     - necesitamos un proceso que actualice la lista de estas sugerencias
+// --- ver el historial de alertas meteorologicas
+// --- al haber alguna alerta, se debe actualizara la sugerencia diaria
+// --- ante alerta metereologica
+//     - se debe sugerir llevar paraguas --> ante alerta de tormenta
+//     - se debe sugerir evitar salir en auto --> ante alerta de granizo
+//     - se debe enviar un mail notificando la alerta
+//          ---> se quiere configurar estas acciones (agregar/sacar) ademas de soportar alertas a futuro
+
+// SUGERENCIAS DIARIAS
+class Usuario {
+  Sugerencia sugerenciaDiaria;
+
+  Sugerencia getSugerenciaDiaria() {
+    return this.sugerenciaDiaria;
+  }
+}
+
+// para que el empleado pueda calcular las sugerencias diaras (cuando quieira, no importa si no es la mañana):
+class Empleado {
+// ... atributos ...
+  List<Usuario> usuarios
+
+  calcularSugerenciasDiarias() {
+    usuarios.forEach(usuario -> usuario.calcularSugerenciaDiaria());
+  }
+
+}
+
+// adapter acomodado a los nuevos requuerimientos
+public interface ConocedorDeClima{
+    EstadoClima cononcerClima(String direccion);
+    AlertaMeteorologica conocerAlertaMeteorologica(String direccion);
+}
+
+public interface AccuWeatherAPI{
+    List<Map<String,Object>> getWeather(String city);
+    List<Map<String,Object>> getAlerts(String city);
+}
+
+public class AlertaMeteorologica {
+    private String tipoAlerta;
+}
+
+public class AccuWeatherAdapter implements ConocedorDeClima{
+    AccuWeatherAPI apiClima = new AccuWeatherAPI();
+    
+    @Override
+    AlertaMeteorologica conocerAlertaMeteorologica(String direccion){
+        Map<String, Object> alerta = consultarApi(direccion);
+        return new AlertaMeteorologica(alerta.get("TipoAlerta"));
+    }
+
+    Map<String, Object> conultarApi(String direccion){
+        try {
+            return this.apiClima.getAlerts(direccion).get(0);
+        }
+        catch {
+        }
+    }
+}
+
+// observer
+// - permite añadir y sacar acciones dinamicamente
+// - ademas, soportar nuevas acciones a futuro
+
+// observado
+public abstract class MotorSugerencias {
+    // lista de interesados a escuchar
+    List<InteresadosEnAlertas> interesadosEnAlertas;
+
+    // metodos para añadir/sacar interesados facilmente
+    agregarInteresadoEnAlertas(InteresadosEnAlertas interesado) {
+        this.interesadosEnAlertas.add(interesado);
+    }
+    sacarInteresadoEnAlertas(InteresadosEnAlertas interesado) {
+        this.interesadosEnAlertas.remove(interesado);
+    }
+
+    // metodo para notificar a los interesados
+    notificarInteresados(AlertaMeteorologica alerta) {
+        this.getInteresadosEnAlertas().forEach(interesado -> interesado.recibirAlerta(alerta));
+    }
+}
+
+// observadores
+public interface InteresadosEnAlertas {
+    void recibirAlerta(AlertaMeteorologica alerta);
+}
+
+public class AlertaPorParaguas implements InteresadosEnAlertas {
+    @Override
+    void recibirAlerta(AlertaMeteorologica alerta) {
+        if (alerta.getTipoAlerta().equals("Tormenta")) {
+            avisoDeLlevarParaguas();
+        }
+    }
+}
+
+public class AlertaPorEvitarSalirEnAuto implements InteresadosEnAlertas {
+    @Override
+    void recibirAlerta(AlertaMeteorologica alerta) {
+        if (alerta.getTipoAlerta().equals("Granizo")) {
+            avisoDeEvitarSalirEnAuto();
+        }
+    }
+}
+
+public class EnvioDeMail implements InteresadosEnAlertas {
+    @Override
+    void recibirAlerta(AlertaMeteorologica alerta) {
+        enviarMailNotificandoAlerta(alerta);
+    }
+}
