@@ -1576,4 +1576,3 @@ class Transmision {
 
 // hay un cron que corre cada poco tiempo para chequear transmisiones pendientes de cierre
 // */5 * * * * java -jar /home/livrestream/terminadorDeTransmisiones.jar
-
