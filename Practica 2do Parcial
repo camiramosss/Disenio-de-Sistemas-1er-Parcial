@@ -101,6 +101,7 @@ public enum TipoPersonajeEnum implements TipoPersonaje{
 // --- INTERFAZ REST ---
 
 
+
 //-------------------------------------QUEMEPONGO-------------------------------------
 @MappedSuperclass
 public class PersistanceEntity{
@@ -174,3 +175,90 @@ public class Color{
 }
 
 // sugerencia no se persiste = es el resultado de un cálculo --> objeto efimero
+
+
+
+//-------------------------------------JUEGODETRONOS-------------------------------------
+// https://docs.google.com/document/d/1Qjgq_KS73UUn8337LEoXi_M28wtgi-EkBuaQ7N-9Ks4/edit?usp=sharing
+@MappedSuperclass
+abstract class PersistanceEntity{
+    @Id @GeneratedValue
+    private Int id;
+}
+
+
+// lugar
+@Entity
+@Table('Lugares')
+@Inheritance(JOINED)
+abstract class Lugar extends PersistanceEntity{
+//...
+}
+
+@Entity
+@Table('Castillos')
+class Castillo extends Lugar{
+//...
+}
+
+@Entity
+@Table('Ciudades')
+class Ciudad extends Lugar{
+//...
+}
+
+
+// fuerza militar
+@Entity
+@Table('Fuerzas_Militares')
+@Inheritance(SINGLE_TABLE)
+@DiscriminatorColumn('tipo')
+abstract class FuerzaMilitar extends PersistanceEntity{
+    //...
+}
+
+@Entity
+@DiscriminatorValue('Area')
+class Aerea extends FuerzaMilitar{
+   Int cantidadDragones
+}
+
+@Entity
+@DiscriminatorValue('Terrestre')
+class Aerea extends FuerzaMilitar{
+   Int cantidadSoldados
+}
+@Entity
+@DiscriminatorValue('Naval')
+class Aerea extends FuerzaMilitar{
+   Int cantidadBarcos
+}
+
+
+// region
+@Entity
+@Table('Regiones')
+class Region extends PersistentEntity{
+  @ManyToMany
+  Collection<Lugar> lugares
+
+  @ManyToOne
+  Casa casaPrincipal
+}
+
+
+// casa
+@Entity
+@Table('Casas')
+class Casa{
+  @ManyToOne
+  Casa vasallaDe
+ 
+  @ManyToOne
+  Lugar origen
+
+  @OneToMany
+  @JoinColumn('casa_id') // va el id de la clase en donde estoy parada
+  Collection<FuerzaMilitar> fuerzasMilitares
+}
+ 
