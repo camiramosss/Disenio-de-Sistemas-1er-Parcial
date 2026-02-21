@@ -261,4 +261,93 @@ class Casa{
   @JoinColumn('casa_id') // va el id de la clase en donde estoy parada
   Collection<FuerzaMilitar> fuerzasMilitares
 }
- 
+
+
+
+//-------------------------------------2CANCIONES-------------------------------------
+// https://docs.google.com/document/d/1DGIFDVIsxbbpffSTyDEaR2m37GF4XSbDoXrUKoctvs4/edit?usp=sharing
+
+abstract class PersistanceEntity{
+    @Id @GeneratedValue
+    int id;
+}
+
+// contenidos
+// SINGLE_TABLE porque se quieren hacer bastantes consultas polimorficas (reproducciones)
+// cambiamos unos campos null por la performance
+// ademas, estos 2 subtipos comparten 2 atributos entre si
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name =tipo, type=String) // los atributos de las otras tablas, terminan todos en esta, pero eso SE VE EN EL DER
+abstract class Contenido extends PersistanceEntity{
+    @Enumerated
+    Clasificacion clasificacion;
+    @Embedded
+    Estadistica estadistica;
+    Usuario usuario;
+}
+
+@Entity
+@DiscriminatorValue('podcast')
+class Podcast extends Contenido{
+    fechaInicio;
+    fechaFin;
+}
+
+@Entity
+@DiscriminatorValue('cancion')
+class Cancion extends Contenido{
+    duracion;
+    subido;
+}
+
+// clasificaciones
+// cada clasificacion no tiene atributos propios
+// tiene el mismo comportamiento todos
+// son stateless
+// no es necesario persistirlo, vive en Contenido como @Enumerated
+enum Clasificacion {
+    MENORES{
+        @Override validarAcceso(usuario);
+    }
+    ADOLESCENTES{
+        @Override validarAcceso(usuario);
+    }
+    ADULTOS{
+        @Override validarAcceso(usuario);
+    }
+}
+// pd: no es necesario poner @Enumerated al principio de la clase, solo cuando lo referencio en la tabla donde vive
+
+@Entity
+class Playlist {
+    @ManyToMany
+    @JoinTable(name= contenidoPorPlaylist)
+    @OrderColumn
+    List<Contenido> contenidos;
+
+    @ManyToMany
+    @JoinTable('playlistXSuscriptor')
+    List<Usuario> suscriptores;
+    
+    @Enumerated
+    Visibilidad visibilidad;
+    
+    Usuario duenio; // deberia haber una relacion en la tabla Usuario --> ManyToOne
+}
+
+enum Visibilidad {
+    PRIVADA, PUBLICA, NO_LISTADA
+}
+
+@Entity
+class Usuario{
+}
+
+// EMBEDDABLE porque no tiene sentido vivir sin un contenido
+// ademas, es algo que no suele cambiar con el tiempo, si se quiere una distinta se intancia una nueva
+@Embeddable
+class Estadistica{
+    int likes;
+    int dislikes;
+}
